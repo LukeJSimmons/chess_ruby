@@ -20,14 +20,10 @@ describe Board do
     end
   end
 
-  describe '#pieces' do
+  describe '#setup_pieces' do
     context 'when game starts' do
       it 'should return all 32 pieces' do
         expect(board.pieces.length).to eq(32)
-      end
-
-      it 'should return Piece instances' do
-        expect(board.pieces.all? { |piece| piece.instance_of? Piece }).to eq(true)
       end
 
       it 'should return correct Piece positions' do
@@ -55,6 +51,43 @@ describe Board do
       it 'displays starting board correctly' do
         expect(board).to receive(:puts).with("\n♖ ♘ ♗ ♕ ♔ ♗ ♘ ♖ \n♙ ♙ ♙ ♙ ♙ ♙ ♙ ♙ \n# # # # # # # # \n# # # # # # # # \n# # # # # # # # \n# # # # # # # # \n♟ ♟ ♟ ♟ ♟ ♟ ♟ ♟ \n♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜ ")
         board.print
+      end
+    end
+  end
+
+  describe '#take_input' do
+    it 'should request input' do
+      expect(board).to receive(:gets)
+      board.take_input
+    end
+
+    context 'when a4 is input' do
+      before do
+        allow(board).to receive(:gets).and_return('a4')
+      end
+
+      it 'should call move with a4' do
+        expect(board).to receive(:move).with('a4')
+        board.take_input
+      end
+    end
+
+    context 'when Rh4 is input' do
+      before do
+        allow(board).to receive(:gets).and_return('Rh4')
+      end
+
+      it 'should call move with Rh4' do
+        expect(board).to receive(:move).with('Rh4')
+        board.take_input
+      end
+    end
+  end
+
+  describe '#move' do
+    context 'when new_position is a4' do
+      xit 'should move pawn a2 to a4' do
+        expect {board.move('a4') }.to change { board.pieces.filter { |piece| piece.position == [1,0] }[0].position }.to([3,0])
       end
     end
   end

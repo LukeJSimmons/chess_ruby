@@ -1,4 +1,9 @@
-require_relative 'piece'
+require_relative 'pawn'
+require_relative 'rook'
+require_relative 'knight'
+require_relative 'bishop'
+require_relative 'queen'
+require_relative 'king'
 
 class Board
   attr_reader :board, :pieces
@@ -25,7 +30,21 @@ class Board
     until row > 1 do
       column = 0
       until column > 7 do
-        pieces_arr << Piece.new([row,column],0,init_positions[row][column])
+        case init_positions[row][column]
+        when ''
+          pieces_arr << Pawn.new([row,column],0)
+        when 'R'
+          pieces_arr << Rook.new([row,column],0)
+        when 'N'
+          pieces_arr << Knight.new([row,column],0)
+        when 'B'
+          pieces_arr << Bishop.new([row,column],0)
+        when 'Q'
+          pieces_arr << Queen.new([row,column],0)
+        when 'K'
+          pieces_arr << King.new([row,column],0)
+        end
+        
         column += 1
       end
       row += 1
@@ -35,7 +54,20 @@ class Board
     until row < 6 do
       column = 0
       until column > 7 do
-        pieces_arr << Piece.new([row,column],1,init_positions[(row-7).abs][column]) # Converts 7 and 6 to 0 and 1 for array
+        case init_positions[(row-7).abs][column]
+        when ''
+          pieces_arr << Pawn.new([row,column],1)
+        when 'R'
+          pieces_arr << Rook.new([row,column],1)
+        when 'N'
+          pieces_arr << Knight.new([row,column],1)
+        when 'B'
+          pieces_arr << Bishop.new([row,column],1)
+        when 'Q'
+          pieces_arr << Queen.new([row,column],1)
+        when 'K'
+          pieces_arr << King.new([row,column],1)
+        end
         column += 1
       end
       row -= 1
@@ -60,5 +92,14 @@ class Board
     end
 
     puts board_str
+  end
+
+  def take_input
+    input = gets
+    self.move(input)
+  end
+
+  def move(new_position)
+    valid_piece = self.pieces.filter { |piece| piece.possible_moves.include?(new_position) }
   end
 end
