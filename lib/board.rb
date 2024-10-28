@@ -8,18 +8,18 @@ require_relative 'king'
 class Board
   attr_reader :board, :pieces
 
-  def initialize(board=[
-    ['#','#','#','#','#','#','#','#'],
-    ['#','#','#','#','#','#','#','#'],
-    ['#','#','#','#','#','#','#','#'],
-    ['#','#','#','#','#','#','#','#'],
-    ['#','#','#','#','#','#','#','#'],
-    ['#','#','#','#','#','#','#','#'],
-    ['#','#','#','#','#','#','#','#'],
-    ['#','#','#','#','#','#','#','#']
-  ])
-    @board = board
-    @pieces = self.setup_pieces
+  def initialize(pieces=self.setup_pieces)
+    @board = [
+      ['#','#','#','#','#','#','#','#'],
+      ['#','#','#','#','#','#','#','#'],
+      ['#','#','#','#','#','#','#','#'],
+      ['#','#','#','#','#','#','#','#'],
+      ['#','#','#','#','#','#','#','#'],
+      ['#','#','#','#','#','#','#','#'],
+      ['#','#','#','#','#','#','#','#'],
+      ['#','#','#','#','#','#','#','#']
+    ]
+    @pieces = pieces
   end
 
   def setup_pieces
@@ -92,14 +92,120 @@ class Board
     end
 
     puts board_str
+    self.take_input
   end
 
   def take_input
-    input = gets
-    self.move(input)
+    input = gets.chomp
+
+    exit if input == 'q'
+
+    split_input = input.split('')
+    if split_input.length > 2
+      piece = split_input[0]
+      x = split_input[1].ord-97
+      y = split_input[2].to_i-1
+    else
+      piece = ''
+      x = split_input[0].ord-97
+      y = split_input[1].to_i-1
+    end
+    self.move(piece,x,y)
   end
 
-  def move(new_position)
-    valid_piece = self.pieces.filter { |piece| piece.possible_moves.include?(new_position) }
+  def get_valid_moves(piece)
+    if piece.instance_of?(Rook) || piece.instance_of?(Bishop) || piece.instance_of?(Queen)
+      return self.get_valid_line_moves(piece)
+    end
+    
+    valid_moves = []
+    piece.possible_moves.map do |possible_move|
+      y_position = possible_move[0] + piece.position[0]
+      x_position = possible_move[1] + piece.position[1]
+
+      is_on_board = y_position.between?(0, 7) && x_position.between?(0, 7)
+
+      is_enemy_piece = @pieces.any? { |other_piece| other_piece.position == [y_position,x_position] && other_piece.color != piece.color }
+
+      is_friendly_piece = @pieces.any? { |other_piece| other_piece.position == [y_position,x_position] && other_piece.color == piece.color }
+
+      valid_moves << [y_position,x_position] if is_on_board && !is_friendly_piece
+    end
+    valid_moves
+  end
+
+  def get_valid_line_moves(piece)
+    valid_moves = []
+
+    directions = piece.possible_moves
+
+    directions.each do |direction|
+      direction_moves = []
+
+      y, x = piece.position
+
+      loop do
+        y += direction[0]
+        x += direction[1]
+
+        break unless y.between?(0, 7) && x.between?(0, 7)
+
+        position = [y, x]
+
+        if @pieces.any? { |other_piece| other_piece.position == position && other_piece.color == piece.color }
+          break
+        elsif @pieces.any? { |other_piece| other_piece.position == position && other_piece.color != piece.color }
+          direction_moves << position
+          break
+        else
+          direction_moves << position
+        end
+      end
+
+      valid_moves.concat(direction_moves)
+    end
+    
+    valid_moves
+  end
+
+  def is_king_in_check?(color)
+    king = @pieces.filter { |piece| piece.instance_of?(King) && piece.color == color }[0]
+    enemy_pieces = @pieces.filter { |piece| piece.color != color }
+
+    is_in_check = enemy_pieces.any? do |enemy_piece|
+      self.get_valid_moves(enemy_piece).include?(king.position)
+    end
+
+    is_in_check
+  end
+
+  def move(piece_letter,x,y)
+    piece_class = self.convert_letter_to_piece(piece_letter)
+    valid_piece = @pieces.filter { |piece| piece.instance_of?(piece_class) && get_valid_moves(piece).include?([y,x]) }[0]
+
+    if valid_piece
+      valid_piece.remove_double_move if valid_piece.instance_of?(Pawn)
+      valid_piece.position = [y,x]
+    else
+      puts 'Invalid input: Please try again'
+    end
+    self.print
+  end
+
+  def convert_letter_to_piece(letter)
+    case letter
+    when ''
+      Pawn
+    when 'R'
+      Rook
+    when 'N'
+      Knight
+    when 'B'
+      Bishop
+    when 'Q'
+      Queen
+    when 'K'
+      King
+    end
   end
 end

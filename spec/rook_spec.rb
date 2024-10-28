@@ -21,10 +21,11 @@ describe Rook do
   describe '#possible_moves' do
     it 'returns all spots up, down, left or right' do
       expect(rook.possible_moves).to eq([
-        [1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],
-        [0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
-        [-1,0],[-2,0],[-3,0],[-4,0],[-5,0],[-6,0],[-7,0],
-        [0,-1],[0,-2],[0,-3],[0,-4],[0,-5],[0,-6],[0,-7]])
+        [1,0],
+        [0,1],
+        [-1,0],
+        [0,-1]
+      ])
     end
   end
 end

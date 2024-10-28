@@ -25,12 +25,5 @@ describe Pawn do
         expect(pawn.possible_moves).to eq([[1,0],[2,0]])
       end
     end
-
-    context 'when not first turn' do
-      it 'returns one step' do
-        pawn.move([2,0])
-        expect(pawn.possible_moves).to eq([[1,0]])
-      end
-    end
   end
 end

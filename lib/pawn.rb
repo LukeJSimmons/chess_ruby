@@ -9,8 +9,7 @@ class Pawn < Piece
     @possible_moves = [[1,0],[2,0]]
   end
 
-  def move(new_position)
-    @position = new_position
-    @possible_moves = [[1,0]]
+  def remove_double_move
+    @possible_moves.delete([2,0])
   end
 end
