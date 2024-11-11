@@ -108,6 +108,30 @@ describe Board do
         board.take_input
       end
     end
+
+    describe 'castling' do
+      context 'when 0-0 is input' do
+        before do
+          allow(board).to receive(:gets).and_return('0-0')
+        end
+
+        it 'should call move on Rook and King' do
+          expect(board).to receive(:move).with('0','-','0')
+          board.take_input
+        end
+      end
+
+      context 'when 0-0-0 is input' do
+        before do
+          allow(board).to receive(:gets).and_return('0-0-0')
+        end
+
+        it 'should call move on Rook and King' do
+          expect(board).to receive(:move).with('0-0','-','0')
+          board.take_input
+        end
+      end
+    end
   end
 
   describe '#get_valid_moves' do
@@ -299,69 +323,119 @@ describe Board do
       allow(board).to receive(:print)
     end
 
-    describe 'valid moves' do
-      context 'when called on starting pawn' do
-        subject(:board) { described_class.new([Pawn.new([1,0],0)]) }
+    context 'when called on starting pawn' do
+      subject(:board) { described_class.new([Pawn.new([1,0],0)]) }
 
-        it 'changes a2 pawn position to a4' do
-          expect { board.move('',0,3) }.to change { board.pieces[0].position }.to([3,0])
+      it 'changes a2 pawn position to a4' do
+        expect { board.move('',0,3) }.to change { board.pieces[0].position }.to([3,0])
+      end
+
+      it 'removes double jump from pawn' do
+        expect { board.move('',0,3) }.to change { board.pieces[0].possible_moves }.to([[1,0]])
+      end
+    end
+
+    context 'when called on promotable pawn' do
+      subject(:board) { described_class.new([Pawn.new([6,0],0)]) }
+
+      it 'calls promote pawn' do
+        expect(board).to receive(:promote_pawn)
+        board.move('',0,7)
+      end
+    end
+
+    context 'when called on a rook' do
+      subject(:board) { described_class.new([Rook.new([0,0],0)]) }
+
+      it 'changes a1 rook position to a4' do
+        expect { board.move('R',0,3) }.to change { board.pieces[0].position }.to([3,0])
+      end
+    end
+
+    context 'when called on a knight' do
+      subject(:board) { described_class.new([Knight.new([0,0],0)]) }
+
+      it 'changes a1 knight position to b3' do
+        expect { board.move('N',1,2) }.to change { board.pieces[0].position }.to([2,1])
+      end
+    end
+
+    context 'when called on a bishop' do
+      subject(:board) { described_class.new([Bishop.new([0,0],0)]) }
+
+      it 'changes a1 bishop position to c3' do
+        expect { board.move('B',2,2) }.to change { board.pieces[0].position }.to([2,2])
+      end
+    end
+
+    context 'when called on a queen' do
+      subject(:board) { described_class.new([Queen.new([0,0],0)]) }
+
+      it 'changes a1 queen position to a4' do
+        expect { board.move('Q',0,3) }.to change { board.pieces[0].position }.to([3,0])
+      end
+
+      it 'changes a1 queen position to c3' do
+        expect { board.move('Q',2,2) }.to change { board.pieces[0].position }.to([2,2])
+      end
+    end
+
+    context 'when called on a king' do
+      subject(:board) { described_class.new([King.new([0,0],0)]) }
+
+      it 'changes a1 king position to a2' do
+        expect { board.move('K',0,1) }.to change { board.pieces[0].position }.to([1,0])
+      end
+    end
+
+    describe 'when white castle is called' do
+      context 'when king-side castle is called' do
+        subject(:board) { described_class.new([King.new([0,4],0),Pawn.new([1,5],0),Pawn.new([1,6],0),Pawn.new([1,7],0),Rook.new([0,7],0)]) }
+
+        it 'moves King into place' do
+          expect { board.move('0','-','0') }.to change { board.pieces[0].position }.to([0,6])
         end
 
-        it 'removes double jump from pawn' do
-          expect { board.move('',0,3) }.to change { board.pieces[0].possible_moves }.to([[1,0]])
+        it 'moves Rook into place' do
+          expect { board.move('0','-','0') }.to change { board.pieces[-1].position }.to([0,5])
         end
       end
 
-      context 'when called on promotable pawn' do
-        subject(:board) { described_class.new([Pawn.new([6,0],0)]) }
+      context 'when queen-side castle is called' do
+        subject(:board) { described_class.new([King.new([0,4],0),Pawn.new([1,0],0),Pawn.new([1,1],0),Pawn.new([1,2],0),Rook.new([0,0],0)]) }
 
-        it 'calls promote pawn' do
-          expect(board).to receive(:promote_pawn)
-          board.move('',0,7)
+        it 'moves King into place' do
+          expect { board.move('0-0','-','0') }.to change { board.pieces[0].position }.to([0,2])
+        end
+
+        it 'moves Rook into place' do
+          expect { board.move('0-0','-','0') }.to change { board.pieces[-1].position }.to([0,3])
+        end
+      end
+    end
+
+    describe 'when black castle is called' do
+      context 'when king-side castle is called' do
+        subject(:board) { described_class.new([King.new([7,4],1),Pawn.new([6,5],1),Pawn.new([6,6],1),Pawn.new([6,7],1),Rook.new([7,7],1)],1) }
+
+        it 'moves King into place' do
+          expect { board.move('0','-','0') }.to change { board.pieces[0].position }.to([7,6])
+        end
+
+        it 'moves Rook into place' do
+          expect { board.move('0','-','0') }.to change { board.pieces[-1].position }.to([7,5])
         end
       end
 
-      context 'when called on a rook' do
-        subject(:board) { described_class.new([Rook.new([0,0],0)]) }
+      context 'when queen-side castle is called' do
+        subject(:board) { described_class.new([King.new([7,4],1),Pawn.new([6,0],1),Pawn.new([6,1],1),Pawn.new([6,2],1),Rook.new([7,0],1)],1) }
 
-        it 'changes a1 rook position to a4' do
-          expect { board.move('R',0,3) }.to change { board.pieces[0].position }.to([3,0])
-        end
-      end
-
-      context 'when called on a knight' do
-        subject(:board) { described_class.new([Knight.new([0,0],0)]) }
-
-        it 'changes a1 knight position to b3' do
-          expect { board.move('N',1,2) }.to change { board.pieces[0].position }.to([2,1])
-        end
-      end
-
-      context 'when called on a bishop' do
-        subject(:board) { described_class.new([Bishop.new([0,0],0)]) }
-
-        it 'changes a1 bishop position to c3' do
-          expect { board.move('B',2,2) }.to change { board.pieces[0].position }.to([2,2])
-        end
-      end
-
-      context 'when called on a queen' do
-        subject(:board) { described_class.new([Queen.new([0,0],0)]) }
-
-        it 'changes a1 queen position to a4' do
-          expect { board.move('Q',0,3) }.to change { board.pieces[0].position }.to([3,0])
+        it 'moves King into place' do
+          expect { board.move('0-0','-','0') }.to change { board.pieces[0].position }.to([7,2])
         end
 
-        it 'changes a1 queen position to c3' do
-          expect { board.move('Q',2,2) }.to change { board.pieces[0].position }.to([2,2])
-        end
-      end
-
-      context 'when called on a king' do
-        subject(:board) { described_class.new([King.new([0,0],0)]) }
-
-        it 'changes a1 king position to a2' do
-          expect { board.move('K',0,1) }.to change { board.pieces[0].position }.to([1,0])
+        it 'moves Rook into place' do
+          expect { board.move('0-0','-','0') }.to change { board.pieces[-1].position }.to([7,3])
         end
       end
     end

@@ -110,6 +110,14 @@ class Board
 
     exit if input == 'q'
 
+    if input == '0-0'
+      self.move('0','-','0')
+      return
+    elsif input == '0-0-0'
+      self.move('0-0','-','0')
+      return
+    end
+
     split_input = input.split('')
     if split_input.length > 2
       piece = split_input[0]
@@ -280,10 +288,26 @@ class Board
   end
 
   def move(piece_letter,x,y)
-    piece_class = self.convert_letter_to_piece(piece_letter)
-    valid_piece = @pieces.filter { |piece| piece.instance_of?(piece_class) && get_valid_moves(piece).include?([y,x]) && piece.color == @current_color }[0]
+    if piece_letter == '0'
+      return puts 'Invalid input: Please try again' unless king_can_castle?('K')
+      king = @pieces.find { |p| p.instance_of?(King) && p.color == @current_color }
+      rook = @pieces.find { |p| p.instance_of?(Rook) && p.position == [[0,7],[7,7]][@current_color] && p.color == @current_color }
 
-    if valid_piece
+      king.position = [[0,6],[7,6]][@current_color]
+      rook.position = [[0,5],[7,5]][@current_color]
+    elsif piece_letter == '0-0'
+      return puts 'Invalid input: Please try again' unless king_can_castle?('Q')
+      king = @pieces.find { |p| p.instance_of?(King) && p.color == @current_color }
+      rook = @pieces.find { |p| p.instance_of?(Rook) && p.position == [[0,0],[7,0]][@current_color] && p.color == @current_color }
+
+      king.position = [[0,2],[7,2]][@current_color]
+      rook.position = [[0,3],[7,3]][@current_color]
+    else
+      piece_class = self.convert_letter_to_piece(piece_letter)
+      valid_piece = @pieces.find { |piece| piece.instance_of?(piece_class) && get_valid_moves(piece).include?([y,x]) && piece.color == @current_color }
+
+      return puts 'Invalid input: Please try again' unless valid_piece
+
       captured_piece = capture_piece_at([y, x])
 
       valid_piece.position = [y,x]
@@ -292,11 +316,10 @@ class Board
         valid_piece.remove_double_move
         self.promote_pawn(valid_piece) if valid_piece.position[0] == [7,0][valid_piece.color]
       end
-
-      @current_color = @current_color == 0 ? 1 : 0
-    else
-      puts 'Invalid input: Please try again'
     end
+
+    @current_color = @current_color == 0 ? 1 : 0
+
     self.print
   end
 
