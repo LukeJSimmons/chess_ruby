@@ -8,7 +8,7 @@ require_relative 'king'
 class Board
   attr_reader :board, :pieces
 
-  def initialize(pieces=self.setup_pieces)
+  def initialize(pieces=self.setup_pieces, current_color=0)
     @board = [
       ['#','#','#','#','#','#','#','#'],
       ['#','#','#','#','#','#','#','#'],
@@ -20,7 +20,7 @@ class Board
       ['#','#','#','#','#','#','#','#']
     ]
     @pieces = pieces
-    @current_color = 0
+    @current_color = current_color
   end
 
   def setup_pieces
@@ -256,6 +256,27 @@ class Board
     # @pieces.each { |piece| p "#{piece.char} - #{get_valid_moves(piece)}" } For debugging valid moves
 
     self.get_valid_moves(king).length == 0 && is_king_in_check?(color) && attacker_is_safe
+  end
+
+  def king_can_castle?(side)
+    king = @pieces.find { |p| p.instance_of?(King) && p.position == [[0,4],[7,4]][p.color] && p.color == @current_color }
+    left_rook = @pieces.find { |p| p.instance_of?(Rook) && p.position == [[0,0],[7,0]][p.color] && p.color == @current_color }
+    right_rook = @pieces.find { |p| p.instance_of?(Rook) && p.position == [[0,7],[7,7]][p.color] && p.color == @current_color }
+    rook = side == 'K' ? right_rook : left_rook
+
+    king_is_in_place = king != nil
+    rook_is_in_place = rook != nil
+
+    if side == 'K'
+      goes_through_check = @pieces.any? { |p| self.get_valid_moves(p).include?([[0,5],[7,5]][@current_color]) && p.color != @current_color }
+      would_put_in_check = @pieces.any? { |p| self.get_valid_moves(p).include?([[0,6],[7,6]][@current_color]) && p.color != @current_color }
+    else
+      goes_through_check = @pieces.any? { |p| self.get_valid_moves(p).include?([[0,3],[7,3]][@current_color]) && p.color != @current_color }
+      would_put_in_check = @pieces.any? { |p| self.get_valid_moves(p).include?([[0,2],[7,2]][@current_color]) && p.color != @current_color }
+    end
+
+    return true if king_is_in_place && rook_is_in_place && !is_king_in_check?(@current_color) && !goes_through_check && !would_put_in_check
+    false
   end
 
   def move(piece_letter,x,y)

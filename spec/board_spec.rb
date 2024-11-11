@@ -453,4 +453,209 @@ describe Board do
       end
     end
   end
+
+  describe '#king_can_castle?' do
+    describe 'when white is castling' do
+      describe 'with a king-side castle' do
+        context 'king can castle' do
+          subject(:board) { described_class.new([King.new([0,4],0),Pawn.new([1,5],0),Pawn.new([1,6],0),Pawn.new([1,7],0),Rook.new([0,7],0)]) }
+
+          it 'returns true' do
+            expect(board.king_can_castle?('K')).to eq(true)
+          end
+        end
+
+        context 'king is not in place' do
+          subject(:board) { described_class.new([King.new([0,5],0),Pawn.new([1,5],0),Pawn.new([1,6],0),Pawn.new([1,7],0),Rook.new([0,7],0)]) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('K')).to eq(false)
+          end
+        end
+
+        context 'rook is not in place' do
+          subject(:board) { described_class.new([King.new([0,4],0),Pawn.new([1,5],0),Pawn.new([1,6],0),Pawn.new([1,7],0),Rook.new([0,6],0)]) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('K')).to eq(false)
+          end
+        end
+
+        context 'king is in check' do
+          subject(:board) { described_class.new([King.new([0,4],0),Pawn.new([1,5],0),Pawn.new([1,6],0),Pawn.new([1,7],0),Rook.new([0,7],0),Rook.new([3,4],1)]) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('K')).to eq(false)
+          end
+        end
+
+        context 'castling goes through check' do
+          subject(:board) { described_class.new([King.new([0,4],0),Pawn.new([1,5],0),Pawn.new([1,6],0),Pawn.new([1,7],0),Rook.new([0,7],0),Bishop.new([3,2],1)]) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('K')).to eq(false)
+          end
+        end
+
+        context 'castling would put king in check' do
+          subject(:board) { described_class.new([King.new([0,4],0),Pawn.new([1,6],0),Pawn.new([1,7],0),Rook.new([0,7],0),Bishop.new([3,3],1)]) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('K')).to eq(false)
+          end
+        end
+      end
+
+      describe 'queen-side castle' do
+        context 'white king can castle' do
+          subject(:board) { described_class.new([King.new([0,4],0),Pawn.new([1,0],0),Pawn.new([1,1],0),Pawn.new([1,2],0),Rook.new([0,0],0)]) }
+
+          it 'returns true' do
+            expect(board.king_can_castle?('Q')).to eq(true)
+          end
+        end
+
+        context 'king is not in place' do
+          subject(:board) { described_class.new([King.new([0,5],0),Pawn.new([1,0],0),Pawn.new([1,1],0),Pawn.new([1,2],0),Rook.new([0,0],0)]) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('Q')).to eq(false)
+          end
+        end
+
+        context 'rook is not in place' do
+          subject(:board) { described_class.new([King.new([0,4],0),Pawn.new([1,0],0),Pawn.new([1,1],0),Pawn.new([1,2],0),Rook.new([0,1],0)]) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('Q')).to eq(false)
+          end
+        end
+
+        context 'king is in check' do
+          subject(:board) { described_class.new([King.new([0,4],0),Pawn.new([1,0],0),Pawn.new([1,1],0),Pawn.new([1,2],0),Rook.new([0,0],0),Rook.new([3,4],1)]) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('Q')).to eq(false)
+          end
+        end
+
+        context 'castling goes through check' do
+          subject(:board) { described_class.new([King.new([0,4],0),Pawn.new([1,0],0),Pawn.new([1,1],0),Pawn.new([1,2],0),Rook.new([0,0],0),Bishop.new([3,6],1)]) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('Q')).to eq(false)
+          end
+        end
+
+        context 'castling would put king in check' do
+          subject(:board) { described_class.new([King.new([0,4],0),Pawn.new([1,0],0),Pawn.new([1,1],0),Pawn.new([1,2],0),Rook.new([0,0],0),Bishop.new([3,5],1)]) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('Q')).to eq(false)
+          end
+        end
+      end
+    end
+    describe 'when black is castling' do
+      describe 'with a king-side castle' do
+        context 'king can castle' do
+          subject(:board) { described_class.new([King.new([7,4],1),Pawn.new([6,5],1),Pawn.new([6,6],1),Pawn.new([6,7],1),Rook.new([7,7],1)],1) }
+
+          it 'returns true' do
+            expect(board.king_can_castle?('K')).to eq(true)
+          end
+        end
+
+        context 'king is not in place' do
+          subject(:board) { described_class.new([King.new([7,5],1),Pawn.new([6,5],1),Pawn.new([6,6],1),Pawn.new([6,7],1),Rook.new([7,7],1)],1) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('K')).to eq(false)
+          end
+        end
+
+        context 'rook is not in place' do
+          subject(:board) { described_class.new([King.new([7,4],1),Pawn.new([6,5],1),Pawn.new([6,6],1),Pawn.new([6,7],1),Rook.new([7,6],1)],1) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('K')).to eq(false)
+          end
+        end
+
+        context 'king is in check' do
+          subject(:board) { described_class.new([King.new([7,4],1),Pawn.new([6,5],1),Pawn.new([6,6],1),Pawn.new([6,7],1),Rook.new([7,7],1),Rook.new([3,4],0)],1) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('K')).to eq(false)
+          end
+        end
+
+        context 'castling goes through check' do
+          subject(:board) { described_class.new([King.new([7,4],1),Pawn.new([6,5],1),Pawn.new([6,6],1),Pawn.new([6,7],1),Rook.new([7,7],1),Bishop.new([4,2],0)],1) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('K')).to eq(false)
+          end
+        end
+
+        context 'castling would put king in check' do
+          subject(:board) { described_class.new([King.new([7,4],1),Pawn.new([6,6],1),Pawn.new([6,7],0),Rook.new([7,7],1),Bishop.new([4,3],0)],1) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('K')).to eq(false)
+          end
+        end
+      end
+
+      describe 'with a queen-side castle' do
+        context 'king can castle' do
+          subject(:board) { described_class.new([King.new([7,4],1),Pawn.new([6,0],1),Pawn.new([6,1],1),Pawn.new([6,2],1),Rook.new([7,0],1)],1) }
+
+          it 'returns true' do
+            expect(board.king_can_castle?('Q')).to eq(true)
+          end
+        end
+
+        context 'king is not in place' do
+          subject(:board) { described_class.new([King.new([7,5],1),Pawn.new([6,0],1),Pawn.new([6,1],1),Pawn.new([6,2],1),Rook.new([7,0],1)],1) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('Q')).to eq(false)
+          end
+        end
+
+        context 'rook is not in place' do
+          subject(:board) { described_class.new([King.new([7,4],1),Pawn.new([6,0],1),Pawn.new([6,1],1),Pawn.new([6,2],1),Rook.new([7,1],1)],1) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('Q')).to eq(false)
+          end
+        end
+
+        context 'king is in check' do
+          subject(:board) { described_class.new([King.new([7,4],1),Pawn.new([6,0],1),Pawn.new([6,1],1),Pawn.new([6,2],1),Rook.new([7,0],1),Rook.new([3,4],0)],1) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('Q')).to eq(false)
+          end
+        end
+
+        context 'castling goes through check' do
+          subject(:board) { described_class.new([King.new([7,4],1),Pawn.new([6,0],1),Pawn.new([6,1],1),Pawn.new([6,2],1),Rook.new([7,0],1),Bishop.new([3,7],0)],1) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('Q')).to eq(false)
+          end
+        end
+
+        context 'castling would put king in check' do
+          subject(:board) { described_class.new([King.new([7,4],1),Pawn.new([6,0],1),Pawn.new([6,1],1),Pawn.new([6,2],1),Rook.new([7,0],1),Bishop.new([3,6],0)],1) }
+
+          it 'returns false' do
+            expect(board.king_can_castle?('Q')).to eq(false)
+          end
+        end
+      end
+    end
+  end
 end
