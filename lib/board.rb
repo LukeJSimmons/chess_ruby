@@ -20,6 +20,7 @@ class Board
       ['#','#','#','#','#','#','#','#']
     ]
     @pieces = pieces
+    @current_color = 0
   end
 
   def setup_pieces
@@ -82,20 +83,29 @@ class Board
     row = 7
     until row < 0 do # Loop moves bottom to top to keep 0,0 in the bottom left
       board_str << "\n"
+      board_str << "#{row+1} "
       column = 0
       until column > 7 do
-        piece_on_position = pieces.filter { |piece| piece.position == [row,column] }[0] # Checks if any piece's position matches the position being printed
+        piece_on_position = pieces.find { |piece| piece.position == [row,column] } # Checks if any piece's position matches the position being printed
         piece_on_position ? board_str << piece_on_position.char + ' ' : board_str << '# '
         column += 1
       end
       row -= 1
     end
 
+    board_str << "\n  a b c d e f g h "
+
     puts board_str
     self.take_input
   end
 
   def take_input
+    if is_king_in_checkmate?(@current_color)
+      puts "#{@current_color == 1 ? 'White' : 'Black'} Wins!"
+      exit
+    end
+
+    puts "#{@current_color == 0 ? 'White' : 'Black'}'s Turn"
     input = gets.chomp
 
     exit if input == 'q'
@@ -113,28 +123,40 @@ class Board
     self.move(piece,x,y)
   end
 
-  def get_valid_moves(piece)
+  def get_valid_moves(piece, check_for_check=true)
     if piece.instance_of?(Rook) || piece.instance_of?(Bishop) || piece.instance_of?(Queen)
-      return self.get_valid_line_moves(piece)
+      return self.get_valid_line_moves(piece, check_for_check)
+    elsif piece.instance_of?(Pawn)
+      self.get_valid_pawn_moves(piece)
     end
     
     valid_moves = []
-    piece.possible_moves.map do |possible_move|
+    
+    piece.possible_moves.each do |possible_move|
       y_position = possible_move[0] + piece.position[0]
       x_position = possible_move[1] + piece.position[1]
 
       is_on_board = y_position.between?(0, 7) && x_position.between?(0, 7)
 
-      is_enemy_piece = @pieces.any? { |other_piece| other_piece.position == [y_position,x_position] && other_piece.color != piece.color }
-
       is_friendly_piece = @pieces.any? { |other_piece| other_piece.position == [y_position,x_position] && other_piece.color == piece.color }
 
-      valid_moves << [y_position,x_position] if is_on_board && !is_friendly_piece
+      position = [y_position,x_position]
+
+      original_position = piece.position
+      captured_piece = capture_piece_at(position)
+      piece.position = position
+
+      king_in_check = is_king_in_check?(piece.color) if check_for_check
+      restore_captured_piece(captured_piece)
+      piece.position = original_position
+
+      valid_moves << [y_position,x_position] if is_on_board && !is_friendly_piece && !king_in_check
     end
+
     valid_moves
   end
 
-  def get_valid_line_moves(piece)
+  def get_valid_line_moves(piece, check_for_check)
     valid_moves = []
 
     directions = piece.possible_moves
@@ -152,12 +174,20 @@ class Board
 
         position = [y, x]
 
+        original_position = piece.position
+        captured_piece = capture_piece_at(position)
+        piece.position = position
+
+        king_in_check = is_king_in_check?(piece.color) if check_for_check
+        restore_captured_piece(captured_piece)
+        piece.position = original_position
+
         if @pieces.any? { |other_piece| other_piece.position == position && other_piece.color == piece.color }
           break
         elsif @pieces.any? { |other_piece| other_piece.position == position && other_piece.color != piece.color }
           direction_moves << position
           break
-        else
+        elsif !king_in_check
           direction_moves << position
         end
       end
@@ -168,24 +198,81 @@ class Board
     valid_moves
   end
 
+  def get_valid_pawn_moves(piece)
+    piece.possible_moves = []
+
+    y = piece.position[0]
+    x = piece.position[1]
+
+    position = [y,x]
+    in_front = [[1,0],[-1,0]][piece.color]
+    in_front_position = [[y+1,x],[y-1,x]][piece.color]
+
+    double_step = [[2,0],[-2,0]][piece.color]
+    double_step_position = [[y+2,x],[y-2,x]][piece.color]
+
+    left_diagonal = [[1,-1],[-1,-1]][piece.color]
+    left_diagonal_position = [[y+1,x-1],[y-1,x-1]][piece.color]
+
+    right_diagonal = [[1,1],[-1,1]][piece.color]
+    right_diagonal_position = [[y+1,x+1],[y-1,x+1]][piece.color]
+
+    front_is_empty = @pieces.none? { |other_piece| other_piece.position == in_front_position && other_piece.color != piece.color }
+    is_first_move = y == [1,6][piece.color]
+    left_diagonal_is_enemy = @pieces.any? { |other_piece| other_piece.position == left_diagonal_position && other_piece.color != piece.color }
+    right_diagonal_is_enemy = @pieces.any? { |other_piece| other_piece.position == right_diagonal_position && other_piece.color != piece.color }
+
+    piece.possible_moves << in_front if front_is_empty
+    piece.possible_moves << double_step if is_first_move && front_is_empty
+    piece.possible_moves << left_diagonal if left_diagonal_is_enemy
+    piece.possible_moves << right_diagonal if right_diagonal_is_enemy
+  end
+
   def is_king_in_check?(color)
-    king = @pieces.filter { |piece| piece.instance_of?(King) && piece.color == color }[0]
+    king = @pieces.find { |piece| piece.instance_of?(King) && piece.color == color }
+    
+    return false unless king
+
     enemy_pieces = @pieces.filter { |piece| piece.color != color }
 
     is_in_check = enemy_pieces.any? do |enemy_piece|
-      self.get_valid_moves(enemy_piece).include?(king.position)
+      self.get_valid_moves(enemy_piece, false).include?(king.position) if king
     end
 
     is_in_check
   end
 
+  def is_king_in_checkmate?(color)
+    king = @pieces.find { |piece| piece.instance_of?(King) && piece.color == color }
+
+    return false unless king
+
+    attacker = @pieces.find { |piece| get_valid_moves(piece).include?(king.position) && piece.color != king.color }
+
+    return false unless attacker
+
+    attacker_is_safe = @pieces.none? { |piece| get_valid_moves(piece).include?(attacker.position) && piece.color != attacker.color }
+
+    # @pieces.each { |piece| p "#{piece.char} - #{get_valid_moves(piece)}" } For debugging valid moves
+
+    self.get_valid_moves(king).length == 0 && is_king_in_check?(color) && attacker_is_safe
+  end
+
   def move(piece_letter,x,y)
     piece_class = self.convert_letter_to_piece(piece_letter)
-    valid_piece = @pieces.filter { |piece| piece.instance_of?(piece_class) && get_valid_moves(piece).include?([y,x]) }[0]
+    valid_piece = @pieces.filter { |piece| piece.instance_of?(piece_class) && get_valid_moves(piece).include?([y,x]) && piece.color == @current_color }[0]
 
     if valid_piece
-      valid_piece.remove_double_move if valid_piece.instance_of?(Pawn)
+      captured_piece = capture_piece_at([y, x])
+
       valid_piece.position = [y,x]
+
+      if valid_piece.instance_of?(Pawn)
+        valid_piece.remove_double_move
+        self.promote_pawn(valid_piece) if valid_piece.position[0] == [7,0][valid_piece.color]
+      end
+
+      @current_color = @current_color == 0 ? 1 : 0
     else
       puts 'Invalid input: Please try again'
     end
@@ -207,5 +294,29 @@ class Board
     when 'K'
       King
     end
+  end
+
+  def capture_piece_at(position, color=@current_color)
+    captured_piece = @pieces.find { |p| p.position == position && p.color != color }
+    @pieces.delete(captured_piece) if captured_piece
+    captured_piece
+  end
+
+  def restore_captured_piece(piece)
+    @pieces << piece if piece
+  end
+
+  def promote_pawn(pawn)
+    puts "Pawn Promoted! Input Q, B, N, or R."
+    input = gets.chomp
+
+    if input == 'K'
+      puts "Invalid Input: You cannot promote to a king"
+      return self.promote_pawn(pawn)
+    end
+
+    removed_pawn = capture_piece_at(pawn.position, pawn.color == 0 ? 1 : 0)
+    piece_class = convert_letter_to_piece(input)
+    @pieces << piece_class.new(removed_pawn.position, removed_pawn.color)
   end
 end

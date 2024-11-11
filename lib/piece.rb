@@ -6,8 +6,4 @@ class Piece
     @position = position
     @color = color
   end
-
-  def remove
-    @position = nil
-  end
 end
