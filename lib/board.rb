@@ -1,3 +1,5 @@
+require 'yaml'
+
 require_relative 'pawn'
 require_relative 'rook'
 require_relative 'knight'
@@ -108,7 +110,7 @@ class Board
     puts "#{@current_color == 0 ? 'White' : 'Black'}'s Turn"
     input = gets.chomp
 
-    exit if input == 'q'
+    exit if input == 'quit' || input == 'q'
 
     if input == '0-0'
       self.move('0','-','0')
@@ -117,6 +119,9 @@ class Board
       self.move('0-0','-','0')
       return
     end
+
+    return self.save_game if input == 'save' || input == 's'
+    return self.load_game if input == 'load' || input == 'l'
 
     split_input = input.split('')
     if split_input.length > 2
@@ -363,4 +368,24 @@ class Board
     piece_class = convert_letter_to_piece(input)
     @pieces << piece_class.new(removed_pawn.position, removed_pawn.color)
   end
+
+  def save_game
+    save_data = YAML.dump({
+      board: @board,
+      pieces: @pieces,
+      current_color: @current_color
+    })
+    File.open("save_data.yml", "w") { |file| file.write(save_data)}
+    puts "Save Complete! Type load whenever you want to continue your game."
+  end
+
+  def load_game
+    loaded_data = YAML.load(File.read("save_data.yml"), permitted_classes: [Rook, Knight, Bishop, Queen, King, Pawn, Array, Hash, Symbol])
+    @board = loaded_data[:board]
+    @pieces = loaded_data[:pieces]
+    @current_color = loaded_data[:current_color]
+    puts "Load Complete! Welcome back to the game."
+    self.print
+  end
+  
 end
