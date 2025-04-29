@@ -23,6 +23,7 @@ class Board
     ]
     @pieces = pieces
     @current_color = current_color
+    @current_turn = 0
   end
 
   def setup_pieces
@@ -101,16 +102,28 @@ class Board
     self.take_input
   end
 
-  def take_input
+  def take_input(error='')
+    if is_first_turn?
+      puts "\nDon't know how to play? Type \"help\" to get started."
+    end
+
+    @current_turn += 1
+
     if is_king_in_checkmate?(@current_color)
       puts "#{@current_color == 1 ? 'White' : 'Black'} Wins!"
       exit
     end
 
+    puts error
     puts "#{@current_color == 0 ? 'White' : 'Black'}'s Turn"
     input = gets.chomp
 
-    exit if input == 'quit' || input == 'q'
+    return exit if input == 'quit' || input == 'q'
+
+    return self.save_game if input == 'save' || input == 's'
+    return self.load_game if input == 'load' || input == 'l'
+
+    return take_input(get_valid_inputs()) if input == 'help'
 
     if input == '0-0'
       self.move('0','-','0')
@@ -120,15 +133,17 @@ class Board
       return
     end
 
-    return self.save_game if input == 'save' || input == 's'
-    return self.load_game if input == 'load' || input == 'l'
+    unless input =~ /^[KQRBN]?[a-h][1-8]$/
+      return take_input("Invalid input: Please type \"help\" if you need to see proper input format.")
+    end
 
     split_input = input.split('')
+
     if split_input.length > 2
       piece = split_input[0]
       x = split_input[1].ord-97
       y = split_input[2].to_i-1
-    else
+    else # When the input is for a Pawn
       piece = ''
       x = split_input[0].ord-97
       y = split_input[1].to_i-1
@@ -217,7 +232,6 @@ class Board
     y = piece.position[0]
     x = piece.position[1]
 
-    position = [y,x]
     in_front = [[1,0],[-1,0]][piece.color]
     in_front_position = [[y+1,x],[y-1,x]][piece.color]
 
@@ -231,12 +245,13 @@ class Board
     right_diagonal_position = [[y+1,x+1],[y-1,x+1]][piece.color]
 
     front_is_empty = @pieces.none? { |other_piece| other_piece.position == in_front_position && other_piece.color != piece.color }
+    double_step_is_empty = @pieces.none? { |other_piece| other_piece.position == double_step_position && other_piece.color != piece.color }
     is_first_move = y == [1,6][piece.color]
     left_diagonal_is_enemy = @pieces.any? { |other_piece| other_piece.position == left_diagonal_position && other_piece.color != piece.color }
     right_diagonal_is_enemy = @pieces.any? { |other_piece| other_piece.position == right_diagonal_position && other_piece.color != piece.color }
 
     piece.possible_moves << in_front if front_is_empty
-    piece.possible_moves << double_step if is_first_move && front_is_empty
+    piece.possible_moves << double_step if is_first_move && front_is_empty && double_step_is_empty
     piece.possible_moves << left_diagonal if left_diagonal_is_enemy
     piece.possible_moves << right_diagonal if right_diagonal_is_enemy
   end
@@ -388,4 +403,30 @@ class Board
     self.print
   end
   
+  def get_valid_inputs
+    valid_inputs = 
+    "
+    Input for textline chess is in the format \"Piece Column Row\" with no spaces.
+
+    Piece letters:
+
+    Pawn - blank (a4)
+    Rook - R (Ra4)
+    Knight - N (Na4)
+    Bishop - B (Ba4)
+    Queen - Q (Qa4)
+    King - K (Ka4)
+
+    Castling is input as follows:
+
+    0-0 - Kingside castle
+    0-0-0 - Queenside castle
+    "
+
+    valid_inputs
+  end
+
+  def is_first_turn?
+    return @current_turn == 0
+  end
 end

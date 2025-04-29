@@ -69,6 +69,7 @@ describe Board do
     before do
       allow(board).to receive(:move)
       allow(board).to receive(:exit)
+      allow(board).to receive(:puts)
     end
 
     context 'when a4 is input' do

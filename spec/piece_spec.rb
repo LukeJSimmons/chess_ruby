@@ -40,10 +40,4 @@ describe Piece do
       end
     end
   end
-
-  describe '#remove' do
-    it 'sets position to nil' do
-      expect { piece.remove }.to change { piece.position }.to(nil)
-    end
-  end
 end

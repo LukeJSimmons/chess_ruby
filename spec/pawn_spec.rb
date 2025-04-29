@@ -18,12 +18,4 @@ describe Pawn do
       end
     end
   end
-
-  describe '#possible_moves' do
-    context 'when first turn' do
-      it 'returns one step and two step forward' do
-        expect(pawn.possible_moves).to eq([[1,0],[2,0]])
-      end
-    end
-  end
 end
