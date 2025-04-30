@@ -107,8 +107,6 @@ class Board
       puts "\nDon't know how to play? Type \"help\" to get started."
     end
 
-    @current_turn += 1
-
     if is_king_in_checkmate?(@current_color)
       puts "#{@current_color == 1 ? 'White' : 'Black'} Wins!"
       exit
@@ -118,10 +116,12 @@ class Board
     puts "#{@current_color == 0 ? 'White' : 'Black'}'s Turn"
     input = gets.chomp
 
-    return exit if input == 'quit' || input == 'q'
+    return exit if input == 'quit' || input == 'q' || input == 'exit'
 
     return self.save_game if input == 'save' || input == 's'
     return self.load_game if input == 'load' || input == 'l'
+
+    return self.print if input == 'print' || input == 'p'
 
     return take_input(get_valid_inputs()) if input == 'help'
 
@@ -137,6 +137,10 @@ class Board
       return take_input("Invalid input: Please type \"help\" if you need to see proper input format.")
     end
 
+    call_move_with_input(input)
+  end
+
+  def call_move_with_input(input)
     split_input = input.split('')
 
     if split_input.length > 2
@@ -308,25 +312,35 @@ class Board
   end
 
   def move(piece_letter,x,y)
+    # Castling
     if piece_letter == '0'
-      return puts 'Invalid input: Please try again' unless king_can_castle?('K')
+      return take_input('Invalid input: The King cannot castle there') unless king_can_castle?('K')
       king = @pieces.find { |p| p.instance_of?(King) && p.color == @current_color }
       rook = @pieces.find { |p| p.instance_of?(Rook) && p.position == [[0,7],[7,7]][@current_color] && p.color == @current_color }
 
       king.position = [[0,6],[7,6]][@current_color]
       rook.position = [[0,5],[7,5]][@current_color]
     elsif piece_letter == '0-0'
-      return puts 'Invalid input: Please try again' unless king_can_castle?('Q')
+      return take_input('Invalid input: The King cannot castle there') unless king_can_castle?('Q')
       king = @pieces.find { |p| p.instance_of?(King) && p.color == @current_color }
       rook = @pieces.find { |p| p.instance_of?(Rook) && p.position == [[0,0],[7,0]][@current_color] && p.color == @current_color }
 
       king.position = [[0,2],[7,2]][@current_color]
       rook.position = [[0,3],[7,3]][@current_color]
+    
+    # Non-Castling
     else
       piece_class = self.convert_letter_to_piece(piece_letter)
-      valid_piece = @pieces.find { |piece| piece.instance_of?(piece_class) && get_valid_moves(piece).include?([y,x]) && piece.color == @current_color }
 
-      return puts 'Invalid input: Please try again' unless valid_piece
+      valid_pieces = @pieces.filter { |piece| piece.instance_of?(piece_class) && get_valid_moves(piece).include?([y,x]) && piece.color == @current_color }
+
+      if valid_pieces.length > 1
+        valid_pieces = [specify_piece(valid_pieces)]
+      end
+
+      valid_piece = valid_pieces[0]
+
+      return take_input('Invalid input: No piece can move there') unless valid_piece
 
       captured_piece = capture_piece_at([y, x])
 
@@ -339,6 +353,7 @@ class Board
     end
 
     @current_color = @current_color == 0 ? 1 : 0
+    @current_turn += 1
 
     self.print
   end
@@ -421,6 +436,15 @@ class Board
 
     0-0 - Kingside castle
     0-0-0 - Queenside castle
+
+    To exit the game, type \"exit\", \"quit\", or \"q\"
+
+    To save your current game, type \"save\" or \"s\"
+    To load your last saved game, type \"load\" or \"l\"
+
+    To print the board again, type \"print\" or \"p\"
+
+    Enjoy the game!
     "
 
     valid_inputs
@@ -428,5 +452,21 @@ class Board
 
   def is_first_turn?
     return @current_turn == 0
+  end
+
+  def specify_piece(pieces)
+    puts "More than one piece can move there. Please specify which piece you'd like to move"
+    piece_strings = pieces.map { |piece| convert_piece_to_text(piece) }
+    puts piece_strings.join(", ")
+    input = gets.chomp
+    return pieces[piece_strings.find_index { |str| str == input }]
+  end
+
+  def convert_piece_to_text(piece)
+    letters = ['a','b','c','d','e','f','g','h']
+    class_letter = piece.class.to_s.split('')[0]
+    x_pos = letters[piece.position[1]]
+    y_pos = piece.position[0]+1
+    return "#{class_letter unless class_letter == 'P'}#{x_pos}#{y_pos}"
   end
 end

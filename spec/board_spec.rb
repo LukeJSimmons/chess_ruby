@@ -440,6 +440,20 @@ describe Board do
         end
       end
     end
+
+    describe 'when two pieces can move to the same spot' do
+      subject(:board) { described_class.new([Rook.new([7,7],1),Rook.new([7,0],1)],1) }
+
+      before do
+        allow(board).to receive(:call_move_with_input)
+        allow(board).to receive(:gets).and_return("Rh8")
+      end
+
+      it 'calls specify_piece with pieces' do
+        expect(board).to receive(:specify_piece).with(board.pieces[0..1])
+        board.move('R',3,7)
+      end
+    end
   end
 
   describe '#convert_letter_to_piece' do
@@ -730,6 +744,40 @@ describe Board do
             expect(board.king_can_castle?('Q')).to eq(false)
           end
         end
+      end
+    end
+  end
+
+  describe '#specify_piece' do
+    before do
+      allow(board).to receive(:call_move_with_input)
+      allow(board).to receive(:gets).and_return("Rh8")
+    end
+  
+    it 'displays error message and the type and position of each piece' do
+      expect(board).to receive(:puts).with("More than one piece can move there. Please specify which piece you'd like to move")
+      expect(board).to receive(:puts).with("Rh8, Ra8")
+      board.specify_piece([Rook.new([7,7],1),Rook.new([7,0],1)])
+    end
+
+    context 'when the player chooses Rh8' do
+      it 'returns the Rook at h8' do
+        rook_at_h8 = Rook.new([7,7],1)
+        expect(board.specify_piece([rook_at_h8,Rook.new([7,0],1)])).to eq(rook_at_h8)
+      end
+    end
+  end
+
+  describe '#convert_piece_to_text' do
+    context 'when called on a Rook at h8' do
+      it 'returns Rh8' do
+        expect(board.convert_piece_to_text(Rook.new([7,7],1))).to eq("Rh8")
+      end
+    end
+
+    context 'when called on a Pawn at a4' do
+      it 'returns Rh8' do
+        expect(board.convert_piece_to_text(Pawn.new([3,0],1))).to eq("a4")
       end
     end
   end
